@@ -4,8 +4,8 @@
 
 Network Working Group                                           T. Pauly
 Internet-Draft                                               Apple, Inc.
-Intended status: Standards Track                           29 March 2021
-Expires: 30 September 2021
+Intended status: Standards Track                          18 August 2021
+Expires: 19 February 2022
 
 
               HTTP Header Fields for Proxied SVCB Metadata
@@ -38,7 +38,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 30 September 2021.
+   This Internet-Draft will expire on 19 February 2022.
 
 Copyright Notice
 
@@ -202,23 +202,22 @@ Table of Contents
               Schwartz, B., Bishop, M., and E. Nygren, "Service binding
               and parameter specification via the DNS (DNS SVCB and
               HTTPS RRs)", Work in Progress, Internet-Draft, draft-ietf-
-              dnsop-svcb-https-04, 17 March 2021,
+              dnsop-svcb-https-07, 5 August 2021,
               <https://datatracker.ietf.org/doc/html/draft-ietf-dnsop-
-              svcb-https-04.txt>.
+              svcb-https-07>.
 
    [I-D.ietf-masque-connect-udp]
               Schinazi, D., "The CONNECT-UDP HTTP Method", Work in
               Progress, Internet-Draft, draft-ietf-masque-connect-udp-
-              03, 5 January 2021,
-              <https://datatracker.ietf.org/doc/html/draft-ietf-masque-
-              connect-udp-03.txt>.
+              04, 12 July 2021, <https://datatracker.ietf.org/doc/html/
+              draft-ietf-masque-connect-udp-04>.
 
    [I-D.ietf-tls-esni]
               Rescorla, E., Oku, K., Sullivan, N., and C. A. Wood, "TLS
               Encrypted Client Hello", Work in Progress, Internet-Draft,
-              draft-ietf-tls-esni-10, 8 March 2021,
+              draft-ietf-tls-esni-13, 12 August 2021,
               <https://datatracker.ietf.org/doc/html/draft-ietf-tls-
-              esni-10.txt>.
+              esni-13>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,

@@ -4,8 +4,8 @@
 
 Network Working Group                                           T. Pauly
 Internet-Draft                                                Apple Inc.
-Intended status: Experimental                              29 March 2021
-Expires: 30 September 2021
+Intended status: Experimental                             18 August 2021
+Expires: 19 February 2022
 
 
                       The Geohash HTTP Client Hint
@@ -38,7 +38,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 30 September 2021.
+   This Internet-Draft will expire on 19 February 2022.
 
 Copyright Notice
 
@@ -185,9 +185,9 @@ Table of Contents
    [I-D.ietf-httpbis-proxy-status]
               Nottingham, M. and P. Sikora, "The Proxy-Status HTTP
               Response Header Field", Work in Progress, Internet-Draft,
-              draft-ietf-httpbis-proxy-status-04, 9 February 2021,
+              draft-ietf-httpbis-proxy-status-06, 16 August 2021,
               <https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-
-              proxy-status-04.txt>.
+              proxy-status-06>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
