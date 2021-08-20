@@ -4,8 +4,8 @@
 
 Network Working Group                                           T. Pauly
 Internet-Draft                                                Apple Inc.
-Intended status: Experimental                             18 August 2021
-Expires: 19 February 2022
+Intended status: Experimental                             20 August 2021
+Expires: 21 February 2022
 
 
                       The Geohash HTTP Client Hint
@@ -38,7 +38,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 19 February 2022.
+   This Internet-Draft will expire on 21 February 2022.
 
 Copyright Notice
 
