@@ -5,9 +5,9 @@
 Network Working Group                                           T. Pauly
 Internet-Draft                                                 F. Jacobs
 Intended status: Experimental                                 Apple Inc.
-Expires: 20 February 2022                                      C.A. Wood
+Expires: 21 February 2022                                      C.A. Wood
                                                               Cloudflare
-                                                          19 August 2021
+                                                          20 August 2021
 
 
               The Privacy Token HTTP Authentication Scheme
@@ -40,7 +40,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 20 February 2022.
+   This Internet-Draft will expire on 21 February 2022.
 
 Copyright Notice
 
