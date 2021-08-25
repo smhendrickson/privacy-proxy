@@ -5,8 +5,8 @@
 Network Working Group                                           T. Pauly
 Internet-Draft                                                Apple Inc.
 Intended status: Experimental                                  C.A. Wood
-Expires: 21 February 2022                                     Cloudflare
-                                                          20 August 2021
+Expires: 26 February 2022                                     Cloudflare
+                                                          25 August 2021
 
 
                          Private Access Tokens
@@ -41,7 +41,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 21 February 2022.
+   This Internet-Draft will expire on 26 February 2022.
 
 Copyright Notice
 
@@ -70,7 +70,11 @@ Table of Contents
    5.  Redemption
    6.  Policies and Uses Cases
    7.  Security Considerations
+     7.1.  Access Token Verification Keys
    8.  IANA Considerations
+     8.1.  "application/access-token-key" media type
+     8.2.  "message/access-token-request" media type
+     8.3.  "message/access-token-response" media type
    9.  Normative References
    Authors' Addresses
 
@@ -167,10 +171,11 @@ Table of Contents
       Issuer is associated with a specific ISSUER_POLICY_WINDOW.
 
    ISSUER_POLICY_WINDOW:  The Issuer Policy Window defines the period
-      over which an Issuer will track access policy.  The ANON_CLIENT_ID
-      that the Mediator derives is specific to a Policy Window, meaning
-      that a CLIENT_ID will not map to the same ANON_CLIENT_ID after the
-      Policy Window has elapsed.
+      over which an Issuer will track access policy, defined in terms of
+      seconds and represented as a uint64.  The ANON_CLIENT_ID that the
+      Mediator derives is specific to a Policy Window, meaning that a
+      CLIENT_ID will not map to the same ANON_CLIENT_ID after the Policy
+      Window has elapsed.
 
    ORIGIN_ID:  The Origin Identifier represents the service for which
       the Client is requesting a Private Access Token.  Conceptually,
@@ -203,20 +208,29 @@ Table of Contents
 
    *  OHTTP configuration: /.well-known/ohttp-config
 
-   *  Policy verification key: /.well-known/verification-key/policy=?
+   *  Access token policy verification key: /.well-known/access-token-
+      key/policy=?
 
-   [OPEN ISSUE: Provide an API to let the Mediator learn the
-   ISSUER_POLICY_WINDOW]
+   *  Access token policy window: /.well-known/access-token-window/
+      policy=?
 
-   The OHTTP configuration is defined in [OHTTP].  The public
-   verification key is a struct of the following format:
+   The OHTTP configuration is defined in [OHTTP].  The access token
+   policy verification key is a struct of the following format:
 
    struct {
      opaque public_key[Nk]; // Defined in [BLINDSIG]
-   } VerificationKey;
+   } AccessTokenKey;
 
-   The contents of VerificationKey are an RSA public key for use with
-   the RSA Blind Signature protocol [BLINDSIG].
+   The contents of AccessTokenKey are an RSA public key for use with the
+   RSA Blind Signature protocol [BLINDSIG].  The response use media type
+   "application/access-token-key".
+
+   The access token policy window is a resource of media type
+   "application/json", with the following structure:
+
+   {
+      "access-token-window": <ISSUER_POLICY_WINDOW>
+   }
 
    Issuers also advertise a Private Access Token request URI template
    [RFC6570] for generating access tokens.  For example, one template
@@ -241,8 +255,16 @@ Table of Contents
       that identifies the origin token public key.  See Section 4.2 for
       details about its construction.
 
-   Moreover, it assumes that the Client and Mediator have a secure and
-   Mediator-authenticated HTTPS connection.  See Section 7 for
+   Issuance also assumes that Issuers maintain local state for each
+   distinct (redeemer, policy) tuple.  In particular, for each tuple,
+   Issuers maintain a stable mapping from ANON_CLIENT_ID to ORIGIN_ID
+   values, as well as a table from (ANON_CLIENT_ID, ORIGIN_ID) to policy
+   state.  Policy state is intentionally opaque, though examples include
+   simple counters to track the number of tokens issued to a given
+   (ANON_CLIENT_ID, ORIGIN_ID) pair.
+
+   Finally, Issuance assumes that the Client and Mediator have a secure
+   and Mediator-authenticated HTTPS connection.  See Section 7 for
    additional about this channel.
 
    Issuance begins by Clients generating a Private Access Token request,
@@ -250,9 +272,6 @@ Table of Contents
 
    nonce = random(32)
    blinded_req, blind_inv = rsabssa_blind(ORIGIN_KEY, nonce)
-
-   [OPEN ISSUE: rewrite this in terms of a generic blind signature
-   scheme (not RSA specific)]
 
    The Client then constructs a Private Access Token request using
    blinded_req, encoded using TLS notation from [TLS13], Section 3:
@@ -301,10 +320,7 @@ Table of Contents
    length byte string for the given Client.  See Section 4.1 for details
    of its computation.  The Mediator also computes ANON_ORIGIN_ID_PRIME,
    a fixed-length byte string, for each ANON_ORIGIN_ID for a specific
-   ANON_CLIENT_ID.  ANON_ORIGIN_ID will not change across different
-   ISSUER_POLICY_WINDOW periods, but each ANON_ORIGIN_ID_PRIME MUST
-   change for each new ISSUER_POLICY_WINDOW due to mapping to the
-   combination of ANON_CLIENT_ID and ANON_ORIGIN_ID.
+   ANON_CLIENT_ID.  See Section 4.2 for details its computation.
 
    Before forwarding the Client's encapsulated request to the Issuer,
    the Mediator includes headers listing both the ANON_CLIENT_ID,
@@ -324,8 +340,9 @@ Table of Contents
 
    <Bytes containing the encapsulated HTTP message for the Issuer>
 
-   [OPEN ISSUE: Square this with OHTTP, which requires that proxies MUST
-   NOT add information about the client to the forwarded request]
+   Note: although these headers are per-request, they do not reveal
+   information about the originating client.  See Section 4.1 and
+   Section 4.2 for more details.
 
    Upon receipt of the Client's encapsulated request, the Issuer checks
    for the "Anonymous-Client-ID" and "Anonymous-Origin-ID" headers.  If
@@ -369,10 +386,6 @@ Table of Contents
    Issuer should increment the number of tokens issued for the given
    ANON_CLIENT_ID.
 
-   [OPEN ISSUE: describe Issuer state requirements somewhere up top,
-   including (1) the client<>origin stable mapping and (2)
-   client<>policy token mapping]
-
    The Mediator forwards the encapsulated response to the Client without
    modification.
 
@@ -388,12 +401,10 @@ Table of Contents
 
    ANON_CLIENT_ID MUST be generated in such a way that any Client
    identifying information cannot be recovered.  It also MUST be unique
-   for each ANON_ORIGIN_ID during a given ISSUER_POLICY_WINDOW.
-
-   [OPEN ISSUE: Does the mediator modify ANON_ORIGIN_ID into
-   ANON_ORIGIN_ID_PRIME before passing to the issuer?  Or does the
-   client learn about the window changes and switch the ANON_ORIGIN_ID
-   accordingly?]
+   for each ANON_ORIGIN_ID during a given ISSUER_POLICY_WINDOW.  One
+   possible derivation is to compute a pseudorandom function (PRF) keyed
+   by CLIENT_ID over ISSUER_POLICY_WINDOW, e.g., ANON_CLIENT_ID =
+   HKDF(secret=CLIENT_ID, salt="", info=ISSUER_POLICY_WINDOW).
 
 4.2.  Anonymous Origin ID
 
@@ -405,18 +416,23 @@ Table of Contents
    One possible mechanism for implementing this identifier is for the
    Client to store a mapping between the ORIGIN_NAME and a randomly
    generated ANON_ORIGIN_ID for future requests.  Alternatively, the
-   Client can compute a pseudorandom function (PRF) keyed by a per-
-   client secret (CLIENT_SECRET) over the ORIGIN_NAME, e.g.,
-   ANON_ORIGIN_ID = HKDF(secret=CLIENT_SECRET, salt="",
-   info=ORIGIN_NAME).
+   Client can compute a PRF keyed by a per-client secret (CLIENT_SECRET)
+   over the ORIGIN_NAME, e.g., ANON_ORIGIN_ID =
+   HKDF(secret=CLIENT_SECRET, salt="", info=ORIGIN_NAME).
+
+   Although clients generate ANON_ORIGIN_ID deterministically across
+   ISSUER_POLICY_WINDOW periods, mediators compute a different
+   ANON_ORIGIN_ID_PRIME value for each new ISSUER_POLICY_WINDOW.
+   Issuers MUST NOT be able to recover ANON_ORIGIN_ID from
+   ANON_ORIGIN_ID_PRIME.  One possible derivation is to compute a PRF
+   keyed by ANON_ORIGIN_ID over ISSUER_POLICY_WINDOW, e.g.,
+   ANON_ORIGIN_ID_PRIME = HKDF(secret=ANON_ORIGIN_ID, salt="",
+   info=ISSUER_POLICY_WINDOW).
 
 5.  Redemption
 
    The Client is assumed to have the policy verification key before
    redeeming a Private Access Token.
-
-   [OPEN ISSUE: describe how Clients can use OHTTP to fetch the policy
-   key from Issuers]
 
    Redeemers can request that tokens be spent by Clients for given
    resources using the WWW-Authenticate header, as follows:
@@ -446,10 +462,153 @@ Table of Contents
    Client authentication, Mediators can use other per-Client information
    for the client identifier mapping, such as IP addressess.
 
+7.1.  Access Token Verification Keys
+
+   Issuer verification keys MUST be unique for each (redeemer, policy)
+   pair.  Sharing policies or keys across redeemers allows access tokens
+   issued under one redeemer-specific policy to be used in the context
+   of another redeemer.
+
+   Clients require the access token verification key before requesting a
+   token.  Clients SHOULD NOT connect directly to the issuer to fetch
+   any such keys.  Instead, clients SHOULD use an anonymizing request
+   proxy such as OHTTP [OHTTP].
+
 8.  IANA Considerations
 
-   TODO: "message/access-token-request" MIME type TODO: "message/access-
-   token-response" MIME type
+   This specification defines the following protocol messages, along
+   with their corresponding media types types:
+
+   *  PolicyVerificationKey Section 3: "application/access-token-key"
+
+   *  AccessTokenRequest Section 4: "message/access-token-request"
+
+   *  AccessTokenResponse Section 4: "message/access-token-response"
+
+   The definition for each media type is in the following subsections.
+
+8.1.  "application/access-token-key" media type
+
+   Type name:  application
+
+   Subtype name:  access-token-key
+
+   Required parameters:  N/A
+
+   Optional parameters:  None
+
+   Encoding considerations:  only "8bit" or "binary" is permitted
+
+   Security considerations:  see Section 7.1
+
+   Interoperability considerations:  N/A
+
+   Published specification:  this specification
+
+   Applications that use this media type:  N/A
+
+   Fragment identifier considerations:  N/A
+
+   Additional information:  Magic number(s):  N/A
+
+                            Deprecated alias names for this type:  N/A
+
+                            File extension(s):  N/A
+
+                            Macintosh file type code(s):  N/A
+
+   Person and email address to contact for further information:  see Aut
+      hors' Addresses section
+
+   Intended usage:  COMMON
+
+   Restrictions on usage:  N/A
+
+   Author:  see Authors' Addresses section
+
+   Change controller:  IESG
+
+8.2.  "message/access-token-request" media type
+
+   Type name:  message
+
+   Subtype name:  access-token-request
+
+   Required parameters:  N/A
+
+   Optional parameters:  None
+
+   Encoding considerations:  only "8bit" or "binary" is permitted
+
+   Security considerations:  see Section 4
+
+   Interoperability considerations:  N/A
+
+   Published specification:  this specification
+
+   Applications that use this media type:  N/A
+
+   Fragment identifier considerations:  N/A
+
+   Additional information:  Magic number(s):  N/A
+
+                            Deprecated alias names for this type:  N/A
+
+                            File extension(s):  N/A
+
+                            Macintosh file type code(s):  N/A
+
+   Person and email address to contact for further information:  see Aut
+      hors' Addresses section
+
+   Intended usage:  COMMON
+
+   Restrictions on usage:  N/A
+
+   Author:  see Authors' Addresses section
+
+   Change controller:  IESG
+
+8.3.  "message/access-token-response" media type
+
+   Type name:  message
+
+   Subtype name:  access-token-response
+
+   Required parameters:  N/A
+
+   Optional parameters:  None
+
+   Encoding considerations:  only "8bit" or "binary" is permitted
+
+   Security considerations:  see Section 4
+
+   Interoperability considerations:  N/A
+
+   Published specification:  this specification
+
+   Applications that use this media type:  N/A
+
+   Fragment identifier considerations:  N/A
+
+   Additional information:  Magic number(s):  N/A
+
+                            Deprecated alias names for this type:  N/A
+
+                            File extension(s):  N/A
+
+                            Macintosh file type code(s):  N/A
+
+   Person and email address to contact for further information:  see Aut
+      hors' Addresses section
+
+   Intended usage:  COMMON
+
+   Restrictions on usage:  N/A
+
+   Author:  see Authors' Addresses section
+
+   Change controller:  IESG
 
 9.  Normative References
 
