@@ -5,8 +5,8 @@
 Network Working Group                                           T. Pauly
 Internet-Draft                                                Apple Inc.
 Intended status: Experimental                                  C.A. Wood
-Expires: 26 February 2022                                     Cloudflare
-                                                          25 August 2021
+Expires: 6 March 2022                                         Cloudflare
+                                                        2 September 2021
 
 
                          Private Access Tokens
@@ -41,7 +41,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 26 February 2022.
+   This Internet-Draft will expire on 6 March 2022.
 
 Copyright Notice
 
@@ -69,8 +69,13 @@ Table of Contents
      4.2.  Anonymous Origin ID
    5.  Redemption
    6.  Policies and Uses Cases
+     6.1.  Client Re-Identification
+     6.2.  Metered Paywalls
    7.  Security Considerations
-     7.1.  Access Token Verification Keys
+     7.1.  Client Identity
+     7.2.  Denial of Service
+     7.3.  Access Token Replay
+     7.4.  Access Token Verification Keys
    8.  IANA Considerations
      8.1.  "application/access-token-key" media type
      8.2.  "message/access-token-request" media type
@@ -445,15 +450,63 @@ Table of Contents
    Authorization: PrivacyToken t=abc
 
    Where the token is a serialized Private Access Token corresponding to
-   the given Redeemer policy.
+   the given Redeemer policy.  Redeemers verify the token using the
+   corresponding policy verification key from the Issuer.  Redeemers are
+   also expected to keep state of Private Access Tokens already spent;
+   see Section 7.3 for discussion.
 
 6.  Policies and Uses Cases
 
-   TODO: example policies and deployments of this (diagram) -- include:
-   - single origin, single policy - single origin, multiple policies -
-   issuer and redeemer as same entity
+   This section describes various instantiations of this protocol to
+   address common use cases.
+
+6.1.  Client Re-Identification
+
+   In this example, a single site wishes to learn if a given user is
+   unique.  The site's only requirement is to know if two otherwise
+   distinct connections originate from the same end-user, and nothing
+   more.  In particular, it is not important for the server to know if
+   two connections correspond to a specific user.  The time window over
+   which the server needs to link such connections together can vary.
+   Larger windows allow for larger per-user linkability.
+
+   To instantiate this case, the site acts as a Redeemer and registers
+   an "unlimited token" policy with the Issuer.  In this policy, the
+   Issuer does not enforce any limit on the number of tokens a given
+   user will obtain.
+
+   Redeemers request tokens from clients and, upon successful
+   redemption, the Redeemer knows the client was able to request a token
+   for the given (CLIENT_ID, ORIGIN_ID) tuple.  As a result, the
+   Redeemer knows this is a unique client.
+
+6.2.  Metered Paywalls
+
+   In this example, a site wishes to implement a metered paywall,
+   wherein the meter is enforced by a weak client identifier such as
+   their IP address.  The policy for such a paywall is to limit the
+   number of visits to unique users to some fixed value.  The policy
+   typically rotates on a regular basis.  For example, users may get N
+   visits within the span of a week before the paywall is enacted.
+
+   To instantiate this case, the site acts as a Redeemer and registers a
+   "bounded token" policy with the Issuer.  In this policy, the Issuer
+   does enforces a fixed number of tokens for a given (ANON_CLIENT_ID,
+   ORIGIN_ID) tuple.
+
+   Redeemers request tokens from clients and, upon successful
+   redemption, the Redeemer knows the client was able to request a token
+   for the given (CLIENT_ID, ORIGIN_ID) tuple within its budget.
+   Failure to present a token can be interpreted as a signal that the
+   client's token budget was exceeded.
 
 7.  Security Considerations
+
+   This section discusses security considerations for the protocol.
+
+   [OPEN ISSUE: discuss trust model]
+
+7.1.  Client Identity
 
    The HTTPS connection between Client and Mediator is minimally
    Mediator-authenticated.  Mediators can also require Client
@@ -462,7 +515,28 @@ Table of Contents
    Client authentication, Mediators can use other per-Client information
    for the client identifier mapping, such as IP addressess.
 
-7.1.  Access Token Verification Keys
+7.2.  Denial of Service
+
+   Requesting and verifying a Private Access Token is more expensive
+   than checking an implicit signal, such as an IP address, especially
+   since malicious clients can generate garbage Private Access Tokens
+   and for Redeemers to work.  However, similar DoS vectors already
+   exist for Redeemers, e.g., at the underlying TLS layer.
+
+7.3.  Access Token Replay
+
+   Redeemers are required to track when Private Access Tokens are spent.
+   Failure to do so may allow malicious clients to replay tokens more
+   than once.  However, given that existing solutions to this problem
+   already require Redeemers to carry per-client state, this additional
+   cost is not a new requirement.
+
+   [OPEN ISSUE: replay state is a tradeoff agaist mediator and issuer
+   availability -- if the latter services were highly available, then
+   redeemers could include a fresh challenge to be folded into the
+   Private Access Token, removing the need for any redeemer state.]
+
+7.4.  Access Token Verification Keys
 
    Issuer verification keys MUST be unique for each (redeemer, policy)
    pair.  Sharing policies or keys across redeemers allows access tokens
@@ -499,7 +573,7 @@ Table of Contents
 
    Encoding considerations:  only "8bit" or "binary" is permitted
 
-   Security considerations:  see Section 7.1
+   Security considerations:  see Section 7.4
 
    Interoperability considerations:  N/A
 
