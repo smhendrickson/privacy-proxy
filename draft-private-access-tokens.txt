@@ -5,8 +5,8 @@
 Network Working Group                                           T. Pauly
 Internet-Draft                                                Apple Inc.
 Intended status: Experimental                                  C.A. Wood
-Expires: 6 March 2022                                         Cloudflare
-                                                        2 September 2021
+Expires: 7 March 2022                                         Cloudflare
+                                                        3 September 2021
 
 
                          Private Access Tokens
@@ -41,7 +41,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 6 March 2022.
+   This Internet-Draft will expire on 7 March 2022.
 
 Copyright Notice
 
@@ -340,8 +340,8 @@ Table of Contents
    cache-control = no-cache, no-store
    content-type = message/ohttp-req
    content-length = ...
-   "Anonymous-Origin-ID" = ANON_ORIGIN_ID_PRIME
-   "Anonymous-Client-ID" = ANON_CLIENT_ID
+   Anonymous-Origin-ID = ANON_ORIGIN_ID_PRIME
+   Anonymous-Client-ID = ANON_CLIENT_ID
 
    <Bytes containing the encapsulated HTTP message for the Issuer>
 
